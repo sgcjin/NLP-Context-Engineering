@@ -1,0 +1,10 @@
+langchain-core
+langchain-text-splitters
+langchain-openai
+langchain-community
+chromadb
+python-dotenv
+openai
+torch
+jieba
+stopwordsiso
