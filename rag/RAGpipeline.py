@@ -8,19 +8,8 @@ from langchain_core.prompts import ChatPromptTemplate
 from read_rag_data import load_json_to_documents
 import dotenv
 dotenv.load_dotenv()
-# ----------------- Step 1: Load documents -----------------
-documents = load_json_to_documents()
-CHROMA_PATH = "./chroma_db_legal"
-# ----------------- Step 2: Split documents -----------------
-# Use RecursiveCharacterTextSplitter to split documents into chunks
-print("2. Splitting documents...")
 
-text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=500, # Maximum length of each chunk
-    chunk_overlap=50, # Overlap length between chunks
-    length_function=len
-)
-splits = text_splitter.split_documents(documents)
+CHROMA_PATH = "./chroma_db_legal"
 
 # ----------------- Step 3: Embedding and storage -----------------
 # Use OpenAIEmbeddings to create embedding model
@@ -37,9 +26,23 @@ if os.path.exists(CHROMA_PATH) and os.listdir(CHROMA_PATH):
         persist_directory=CHROMA_PATH, 
         embedding_function=embeddings
     )
-else:
+else:# If database does not exist, create a new one
+    if not os.path.exists(CHROMA_PATH):
+        print(f"🆕 Database not detected, creating and storing to {CHROMA_PATH}...")
+        os.makedirs(CHROMA_PATH)
+    # ----------------- Step 1: Load documents -----------------
+    print("1. Loading documents...")
+    documents = load_json_to_documents()
+    # ----------------- Step 2: Split documents -----------------
     print(f"🆕 Database not detected, creating and storing to {CHROMA_PATH}...")
-    
+    print("2. Splitting documents...")
+
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=500, # Maximum length of each chunk
+        chunk_overlap=50, # Overlap length between chunks
+        length_function=len
+    )
+    splits = text_splitter.split_documents(documents)
     # Execute time-consuming embedding operations here
     vectorstore = Chroma.from_documents(
         documents=splits, 
@@ -81,10 +84,21 @@ print(f"🔍 Retrieving: {query}")
 retrieved_docs = retriever.invoke(query)
 # Print results
 print(f"\n✅ Retrieved {len(retrieved_docs)} relevant document(s):\n")
+
+# Combine documents into a single string
+context_string = ""
 for i, doc in enumerate(retrieved_docs):
-    print(f"--- Document {i+1} ---")
-    # Get content
-    print(f"[Content Summary]: {doc.page_content[:100]}...") 
-    # Get metadata (crime name, link, etc.)
-    print(f"[Metadata]: {doc.metadata}")
-    print("\n")
+    # Get filtered metadata (only crime_small and crime_big)
+    filtered_metadata = {
+        "crime_small": doc.metadata.get("crime_small", "N/A"),
+        "crime_big": doc.metadata.get("crime_big", "N/A")
+    }
+    
+    # Build document string
+    doc_string = f"--- Document {i+1} ---\n"
+    doc_string += f"[Content]: {doc.page_content}\n"
+    doc_string += f"[Metadata]: {filtered_metadata}\n\n"
+    
+    context_string += doc_string
+
+print(context_string)

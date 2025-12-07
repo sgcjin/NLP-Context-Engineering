@@ -24,7 +24,6 @@ def load_json_to_documents(file_path: str=filename) -> List[Document]:
     # Process the loaded data list
     for item in data:
         metadata = {
-            "source": item.get("crime_link", "N/A"),
             "crime_big": item.get("crime_big", "N/A"),
             "crime_small": item.get("crime_small", "N/A"),
         }
