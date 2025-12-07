@@ -4,11 +4,11 @@ COMS 4705 Project: From Static Retrieval to Dynamic Context: Investigating Conte
 
 ## RAG Pipeline Overview
 
-The system processes Chinese legal crime data from JSON Lines format, creates vector embeddings, stores them in a Chroma vector database, and enables semantic search to retrieve relevant legal documents based on user queries.
+The system processes PubMedQA data from JSON Lines format, creates vector embeddings, stores them in a Chroma vector database, and enables semantic search to retrieve relevant documents based on user queries.
 
 ### Features
 
-- **Document Loading**: Reads legal documents from JSON Lines (JSONL) format
+- **Document Loading**: Reads documents from JSON Lines (JSONL) format
 - **Text Chunking**: Splits documents into manageable chunks with overlap for better context retention
 - **Vector Embeddings**: Uses OpenAI's `text-embedding-3-small` model for semantic embeddings
 - **Vector Database**: Stores and retrieves documents using Chroma vector database with persistence
@@ -84,24 +84,6 @@ echo "OPENAI_API_KEY=your_api_key_here" > .env
 
 
 
-## Example Output
-
-```
-1. Loading JSON Lines data from file data/kg_crime.json...
-   Successfully loaded 857 legal document(s).
-2. Splitting documents...
-3. Creating embeddings and storing to vector database...
-🔄 Detected existing vector database (./chroma_db_legal), loading directly...
-🔍 Retrieving: 走私罪怎么判刑？
-
-✅ Retrieved 10 relevant document(s):
-
---- Document 1 ---
-[Content Summary]: --- fatiao ---
-[刑法条文]
-第一百五十一条走私武器、弹药、核材料或者伪造的货币的，处七年以上有期徒刑...
-[Metadata]: {'source': 'http://china.findlaw.cn/zuiming/...', 'crime_big': '破坏社会主义市场经济秩序罪', 'crime_small': '走私罪'}
-```
 
 ## Configuration
 
@@ -125,30 +107,11 @@ Modify the `k` parameter in the retriever:
 retriever = vectorstore.as_retriever(search_kwargs={"k": 10})  # Change 10 to desired number
 ```
 
-## Data Format
-
-The input JSONL file should have the following structure (one JSON object per line):
-
-```json
-{
-  "_id": {...},
-  "crime_big": "危害国家安全罪",
-  "crime_small": "背叛国家罪",
-  "crime_link": "http://...",
-  "fatiao": [...],
-  "gainian": [...],
-  "tezheng": [...],
-  "chufa": [...],
-  "rending": [...],
-  "jieshi": [...],
-  "bianhu": [...]
-}
-```
 
 ## Notes
 
 - The vector database is persisted locally, so subsequent runs will be much faster
-- To rebuild the database, delete the `chroma_db_legal` directory
+- To rebuild the database, delete the `chroma_db` directory
 
 - All retrieved documents include metadata for traceability
 

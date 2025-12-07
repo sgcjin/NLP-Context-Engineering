@@ -1,15 +1,16 @@
 import os
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
+from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_community.vectorstores import Chroma
-
 from langchain_core.prompts import ChatPromptTemplate
 # ----------------- Step 0: Prepare data -----------------
-from read_rag_data import load_json_to_documents
 import dotenv
 dotenv.load_dotenv()
 
-CHROMA_PATH = "./chroma_db_legal"
+CHROMA_PATH = "chroma_db"
+
+FOLDER_PATH='Chinese-Laws'
 
 # ----------------- Step 3: Embedding and storage -----------------
 # Use OpenAIEmbeddings to create embedding model
@@ -18,31 +19,32 @@ embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 
 # Use Chroma as vector store
 # Default storage in local .chroma_db folder
-if os.path.exists(CHROMA_PATH) and os.listdir(CHROMA_PATH):
-    print(f"🔄 Detected existing vector database ({CHROMA_PATH}), loading directly...")
-    
-    # Directly load existing database without embedding computation, very fast
-    vectorstore = Chroma(
-        persist_directory=CHROMA_PATH, 
-        embedding_function=embeddings
-    )
-else:# If database does not exist, create a new one
+if not os.path.exists(CHROMA_PATH) or not os.listdir(CHROMA_PATH):
+
+    print(f"🆕 Database not detected, creating and storing to {CHROMA_PATH}...")
     if not os.path.exists(CHROMA_PATH):
-        print(f"🆕 Database not detected, creating and storing to {CHROMA_PATH}...")
         os.makedirs(CHROMA_PATH)
     # ----------------- Step 1: Load documents -----------------
     print("1. Loading documents...")
-    documents = load_json_to_documents()
+    loader = DirectoryLoader(
+    path=FOLDER_PATH,
+    glob="**/*.txt",
+    loader_cls=TextLoader,
+    loader_kwargs={'encoding': 'utf-8'}  
+    )
+    documents = loader.load()
+    print(f"Loaded {len(documents)} documents")
     # ----------------- Step 2: Split documents -----------------
-    print(f"🆕 Database not detected, creating and storing to {CHROMA_PATH}...")
     print("2. Splitting documents...")
 
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=500, # Maximum length of each chunk
         chunk_overlap=50, # Overlap length between chunks
-        length_function=len
+        length_function=len,
+        separators=["\n\n", "\n", " ", ""]
     )
     splits = text_splitter.split_documents(documents)
+    print(f"Split {len(documents)} documents into {len(splits)} chunks")
     # Execute time-consuming embedding operations here
     vectorstore = Chroma.from_documents(
         documents=splits, 
@@ -50,7 +52,12 @@ else:# If database does not exist, create a new one
         persist_directory=CHROMA_PATH
     )
     print("✅ Database creation completed!")
-
+else:
+    print(f"🔄 Detected existing vector database ({CHROMA_PATH}), loading directly...")
+    vectorstore = Chroma(
+        persist_directory=CHROMA_PATH, 
+        embedding_function=embeddings
+    )
 # Set vector store as retriever
 retriever = vectorstore.as_retriever(search_kwargs={"k": 10})
 
@@ -89,15 +96,11 @@ print(f"\n✅ Retrieved {len(retrieved_docs)} relevant document(s):\n")
 context_string = ""
 for i, doc in enumerate(retrieved_docs):
     # Get filtered metadata (only crime_small and crime_big)
-    filtered_metadata = {
-        "crime_small": doc.metadata.get("crime_small", "N/A"),
-        "crime_big": doc.metadata.get("crime_big", "N/A")
-    }
+    
     
     # Build document string
     doc_string = f"--- Document {i+1} ---\n"
-    doc_string += f"[Content]: {doc.page_content}\n"
-    doc_string += f"[Metadata]: {filtered_metadata}\n\n"
+    doc_string += f"[Content]: {doc.page_content[:300]}\n"
     
     context_string += doc_string
 
