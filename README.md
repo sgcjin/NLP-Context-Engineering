@@ -1,120 +1,58 @@
-# NLP-Context-Engineering
 
-COMS 4705 Project: From Static Retrieval to Dynamic Context: Investigating Context Engineering in RAG-Based QA
+# NLP Context Engineering 
 
-## RAG Pipeline Overview
+## Overview
+**`Experiment/`**: This directory contains experimental components for NLP context engineering project in NLP4705, focusing on Context Engineering for Legal information retrieval systems.
 
-The system processes PubMedQA data from JSON Lines format, creates vector embeddings, stores them in a Chroma vector database, and enables semantic search to retrieve relevant documents based on user queries.
+## Components
 
-### Features
+### 1. Experiment Setup on Google Colab(`Experiment/main.ipynb`)
+A Jupyter notebook for setting up and training the legal information retrieval compressor. 
 
-- **Document Loading**: Reads documents from JSON Lines (JSONL) format
-- **Text Chunking**: Splits documents into manageable chunks with overlap for better context retention
-- **Vector Embeddings**: Uses OpenAI's `text-embedding-3-small` model for semantic embeddings
-- **Vector Database**: Stores and retrieves documents using Chroma vector database with persistence
-- **Semantic Search**: Retrieves top-k most relevant documents based on query similarity
+### 2. Summary Evaluation (`Experiment/Summary_eval.ipynb`)
+A detailed evaluation framework for assessing summary quality and performance. This notebook provides:
+- **Evaluation Metrics**: Comprehensive metrics for summary quality assessment
+- **Comparative Analysis**: Tools for comparing different summarization approaches
+- **Performance Analysis**: Statistical analysis of summarization results
+- **Visualization**: Charts and graphs for evaluation results
 
-### RAG Architecture
+## Data Sources
 
-The RAG pipeline consists of the following steps:
+### Knowledge Base Data
+- **Source**: [CrimeKgAssitant](https://github.com/liuhuanyong/CrimeKgAssitant)
+- **Content**: Comprehensive knowledge graph of Chinese criminal law
+- **Format**: JSON structure containing detailed crime classifications, legal concepts, characteristics, and penalties
+- **Coverage**: Various crime categories including national security crimes, public safety crimes, etc.
 
-#### Step 0: Data Preparation
-- Loads environment variables from `.env` file
-- Imports the document loading function
+### Training Data
+- **Source**: [CAIL2018 Dataset](https://github.com/china-ai-law-challenge/CAIL2018)
+- **Content**: Chinese legal case documents for NLP model training
+- **Structure**:
+  - `data_train.json`: Training dataset
+  - `data_valid.json`: Validation dataset
+  - `data_test.json`: Test dataset
+- **Format**: JSON objects containing case facts, relevant legal articles, accusations, and sentencing information
 
-#### Step 1: Document Loading
-- Reads legal documents from `data/kg_crime.json` (JSONL format)
-- Converts each JSON object into LangChain `Document` objects
-- Extracts metadata: crime links, crime categories (big/small)
-- Processes legal fields: `fatiao`, `gainian`, `tezheng`, `chufa`, `rending`, `jieshi`, `bianhu`
-
-#### Step 2: Document Splitting
-- Uses `RecursiveCharacterTextSplitter` to split documents into chunks
-- **Chunk size**: 500 characters
-- **Chunk overlap**: 50 characters (for context continuity)
-
-#### Step 3: Embedding and Storage
-- Creates embeddings using OpenAI's embedding model
-- Stores embeddings in Chroma vector database
-- **Smart loading**: If database exists, loads directly (fast); otherwise creates new database
-- Database persists to `./chroma_db_legal` directory
-
-#### Step 4: Retrieval Setup
-- Configures retriever with `k=10` (retrieves top 10 most relevant documents)
-- Uses semantic similarity search
-
-#### Step 5: Query Execution
-- Performs semantic search on user queries
-- Returns relevant documents with metadata
-- Displays document summaries and metadata
-
-## Requirements
-
-### Python Packages
-```
-langchain
-langchain-openai
-langchain-community
-langchain-text-splitters
-chromadb
-python-dotenv
+## Data Format
+The training/validation/test datasets follow this structure:
+```json
+{
+  "fact": "Case description in Chinese",
+  "meta": {
+    "relevant_articles": [264],
+    "accusation": ["盗窃"],
+    "punish_of_money": 1000,
+    "criminals": ["Defendant Name"],
+    "term_of_imprisonment": {
+      "death_penalty": false,
+      "imprisonment": 4,
+      "life_imprisonment": false
+    }
+  }
+}
 ```
 
-
-
-## Installation
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd NLP-Context-Engineering
-```
-
-2. Install dependencies:
-```bash
-pip install langchain langchain-openai langchain-community langchain-text-splitters chromadb python-dotenv
-```
-
-3. Set up environment variables:
-```bash
-# Create .env file
-echo "OPENAI_API_KEY=your_api_key_here" > .env
-```
-
-
-
-
-
-## Configuration
-
-### Adjusting Chunk Parameters
-
-In `RAGpipeline.py`, modify the `RecursiveCharacterTextSplitter` parameters:
-
-```python
-text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=500,      # Adjust chunk size
-    chunk_overlap=50,    # Adjust overlap
-    length_function=len
-)
-```
-
-### Changing Retrieval Count
-
-Modify the `k` parameter in the retriever:
-
-```python
-retriever = vectorstore.as_retriever(search_kwargs={"k": 10})  # Change 10 to desired number
-```
-
-
-## Notes
-
-- The vector database is persisted locally, so subsequent runs will be much faster
-- To rebuild the database, delete the `chroma_db` directory
-
-- All retrieved documents include metadata for traceability
-
-## License
-
-This project is part of COMS 4705 coursework at Columbia University.
+## Usage
+1. Start with `main.ipynb` to set up the experiment
+2. Use the provided datasets for training and evaluation
+3. Run `Summary_eval.ipynb` to assess performance and generate evaluation reports
